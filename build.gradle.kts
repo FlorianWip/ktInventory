@@ -4,7 +4,6 @@ plugins {
 }
 
 group = "de.florianwip"
-var artifact = "ktInventory"
 
 val tag = System.getenv("GITHUB_REF")?.split("/")?.last() ?: "1.0.0"
 version = if (tag.startsWith("v")) tag.substring(1) else tag
@@ -22,20 +21,20 @@ repositories {
 dependencies {
     testImplementation(kotlin("test"))
     compileOnly ("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
-//    compileOnly ("org.spigotmc:spigot:1.20.4-R0.1-SNAPSHOT")
 }
 
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
-            artifactId = "your-artifact-name" // change to your desired artifactId
+            groupId = project.group.toString()
+            artifactId = "ktInventory" // change to your desired artifactId
         }
     }
 
     repositories {
         maven {
-            name = "CustomRepo"
+            name = "flammenfuchs-public"
             url = uri("https://repo.flammenfuchs.de/public")
             credentials {
                 username = System.getenv("MAVEN_REPO_USERNAME")
