@@ -1,6 +1,7 @@
 package de.florianwip.ktinventory.item
 
 import com.destroystokyo.paper.profile.ProfileProperty
+import de.florianwip.ktinventory.service.KtInventoryService
 import org.bukkit.Bukkit
 import org.bukkit.inventory.ItemStack
 import java.util.UUID
@@ -53,10 +54,10 @@ enum class MHFSkull(val mhfName: String, val uuid: String, val base64: String) {
      * @param block the [ItemBuilder]
      * @return A [ItemStack] from a MHF-Skull
      */
-    fun buildSkull(block: ItemBuilder.() -> Unit): ItemStack {
+    fun buildSkull(service: KtInventoryService? = null, block: ItemBuilder.() -> Unit): ItemStack {
         val profile = Bukkit.createProfile(UUID.fromString(this.uuid), this.mhfName)
         profile.setProperty(ProfileProperty("textures", this.base64))
-        return buildItem {
+        return buildItem(service) {
             skullProfile = profile
             block()
         }

@@ -1,6 +1,7 @@
 package de.florianwip.ktinventory.inventory
 
 import de.florianwip.ktinventory.button.view.Button
+import de.florianwip.ktinventory.service.KtInventoryService
 import org.bukkit.entity.Player
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryCloseEvent
@@ -15,11 +16,17 @@ import org.bukkit.inventory.Inventory
 interface InventoryBase<T: InventoryBase<T>> {
 
     /**
-     * Get the [InventoryProperties]
+     * Register this [InventoryBase] to a [KtInventoryService]
      *
-     * @see [InventoryProperties]
+     * @param service the service to register
+     * @return the current instance for chaining
      */
-    var properties: InventoryProperties
+    fun register(service: KtInventoryService): T
+
+    /**
+     * The service bound to this [InventoryBase]
+     */
+    fun getService(): KtInventoryService?
 
     /**
      * Open the [InventoryBase] for a [Player]

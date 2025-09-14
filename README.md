@@ -4,7 +4,7 @@ It is written in kotlin<br>
 **Note:** This library only works in PaperSpigot and is developed and tested for the 1.21.4
 
 ## Summary
-- designed for PaperSpigot 1.21.4
+- designed for PaperSpigot 1.21.7
 - designed with and for kotlin
 - provides an extensive ItemBuilder
 - provides a UI Lib with Inventories to list Collections and basic UIs
@@ -46,6 +46,23 @@ dependencies {
 }
 ```
 ## UI Lib
+### Before any Usages
+Inventories need to be registered in a service. You need to initialize an `KtInventorySerivce` first.<br>
+There you can set global values for the inventories like a default background or a prefix for the inventory titles.
+```kotlin
+val service = KtInventoryService(myPlugin) // <- 'myPlugin' is your plugin instance
+```
+You can set custom deserializers for the ItemBuilder here too.
+```kotlin
+val miniMessage = MiniMessage.miniMessage()
+val service = KtInventoryService(
+    miniMessage,
+    KtInventorySettingsImpl(miniMessage),
+    myPlugin,
+    plugin.logger
+)
+```
+`KtInventoryService` is an open class, so you can also extend it to provide your own functionality.
 ### ListInventory
 List inventories allows to list elements represented by items. It can be used to display for example friends, homes
 ```kotlin
@@ -69,7 +86,7 @@ fun listGui(player: Player) {
                 }
             }
         }
-    )
+    ).register(service) // <- Register the inventory in the service
     gui.open(player)
 }
 ```
@@ -100,7 +117,7 @@ fun listGui(player: Player) {
                 type = Material.NAME_TAG
                 name = "<aqua>Players Online: ${Bukkit.getOnlinePlayers().size}"
             }
-        ))
+        )).register(service) // <- Register the inventory in the service
         gui.open(player)
     }
 ```
@@ -123,11 +140,20 @@ Supported things:
 - Color (Leather Armor)
 - Copy from existing ItemStacks
 
+The default handling of miniMessage let displayNames and lores appear italic and the lore additional purple.<br>
+This item builder is suppressing it by default<br>
+You can change this behaviour in the settings of the `KtInventoryService` or with `buildItem(miniMessage, disableFormat) {...}`<br>
+To access an ItemBuilder linked to a `KtInventoryService` you can use `service.itemBuilder {...}`<br>
+
 ## MHF-Heads
 This lib provides (account-)name, (account-)uuid and the base64 value of common MHF-Heads
 ```kotlin
 //example
 val item = MHFSkull.ARROW_RIGHT.buildSkull {
+    displayName = "<red>Next Page"
+}
+// if you want to provide a service to pull settings (see ItemBuilder)
+val item = MHFSkull.ARROW_RIGHT.buildSkull(service) {
     displayName = "<red>Next Page"
 }
 val uuid = UUID.fromString(MHFSkull.ARROW_RIGHT.uuid)

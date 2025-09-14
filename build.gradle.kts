@@ -5,7 +5,7 @@ plugins {
 
 group = "de.florianwip"
 
-val tag = System.getenv("GITHUB_REF")?.split("/")?.last() ?: "1.0.0"
+val tag = System.getenv("GITHUB_REF")?.split("/")?.last() ?: "2.0.0"
 version = if (tag.startsWith("v")) tag.substring(1) else tag
 
 repositories {
@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
-    compileOnly ("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
+    compileOnly ("io.papermc.paper:paper-api:1.21.7-R0.1-SNAPSHOT")
 }
 
 publishing {

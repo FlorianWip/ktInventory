@@ -2,6 +2,7 @@ package de.florianwip.ktinventory.inventory.view.background
 
 import de.florianwip.ktinventory.inventory.InventoryBase
 import de.florianwip.ktinventory.button.view.Button
+import de.florianwip.ktinventory.service.KtInventoryService
 
 interface InventoryBackground {
 
@@ -12,5 +13,5 @@ interface InventoryBackground {
      * @param rows amount of rows
      * @return [Array] of [Button] or null values in size of the rows
      */
-    fun <T: InventoryBase<T>> getBackground(rows: Int): Array<Button<T>?>
+    fun <T: InventoryBase<T>> getBackground(rows: Int, service: KtInventoryService? = null): Array<Button<T>?>
 }

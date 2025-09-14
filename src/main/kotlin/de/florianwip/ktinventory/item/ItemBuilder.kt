@@ -2,7 +2,11 @@ package de.florianwip.ktinventory.item
 
 import com.destroystokyo.paper.profile.PlayerProfile
 import com.destroystokyo.paper.profile.ProfileProperty
+import de.florianwip.ktinventory.service.KtInventoryService
+import de.florianwip.ktinventory.service.settings.KtInventorySettingsImpl
 import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.TextColor
+import net.kyori.adventure.text.format.TextDecoration
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.Color
@@ -11,26 +15,56 @@ import org.bukkit.OfflinePlayer
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.inventory.ItemFlag
 import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.inventory.meta.LeatherArmorMeta
 import org.bukkit.inventory.meta.SkullMeta
-import org.bukkit.profile.PlayerTextures
-import java.util.UUID
+import java.util.*
 
 /**
  * Build an [ItemStack]
  *
  * @param block the [ItemBuilder]
+ * @param service the [KtInventoryService] or null if no need to pull its settings
  * @return a new [ItemStack] with the defined values
  */
-fun buildItem(block: ItemBuilder.() -> Unit): ItemStack {
-    return ItemBuilder().apply(block).build()
+fun buildItem(service: KtInventoryService? = null, block: ItemBuilder.() -> Unit): ItemStack {
+    val miniMessage = service?.miniMessage ?: MiniMessage.miniMessage()
+    val disableFormat = service?.settings?.itemDisableDefaultFormat ?: KtInventorySettingsImpl.FALLBACK_SETTINGS.itemDisableDefaultFormat
+    return ItemBuilder(miniMessage, disableFormat).apply(block).build()
+}
+
+
+/**
+ * Build an [ItemStack]
+ *
+ * @param block the [ItemBuilder]
+ * @param miniMessage the [MiniMessage] instance to use
+ * @param disableDefaultFormatting whether to disable default formatting (it will set white color, no italic as default)
+ * @return a new [ItemStack] with the defined values
+ */
+fun buildItem(block: ItemBuilder.() -> Unit, miniMessage: MiniMessage, disableDefaultFormatting: Boolean): ItemStack {
+    return ItemBuilder(miniMessage, disableDefaultFormatting).apply(block).build()
 }
 
 /**
  * Build an [ItemStack]
+ *
+ * @param miniMessage the [MiniMessage] instance to use
+ * @param disableDefaultFormatting whether to disable default formatting (white color, no italic)
  */
-class ItemBuilder {
+class ItemBuilder(
+    val miniMessage: MiniMessage,
+    val disableDefaultFormatting: Boolean
+) {
+
+    private fun mini(text: String): Component {
+        return if (disableDefaultFormatting) {
+            miniMessage.deserialize(text)
+                .decoration(TextDecoration.ITALIC, false)
+                .colorIfAbsent(TextColor.fromHexString("#FFFFFF"))
+        } else {
+            miniMessage.deserialize(text)
+        }
+    }
 
     /**
      * Set the [Material] with default [Material.AIR]
@@ -137,12 +171,12 @@ class ItemBuilder {
             if (displayName != null) {
                 meta.displayName(displayName)
             } else if (name != null) {
-                meta.displayName(mini.deserialize(name!!))
+                meta.displayName(mini(name!!))
             }
             if (lore != null) {
                 meta.lore(lore!!.asList())
             } else if (stringLore != null) {
-                meta.lore(stringLore!!.map { mini.deserialize(it) })
+                meta.lore(stringLore!!.map { mini(it) })
             }
             if (enchantments != null) {
                 enchantments!!.forEach {

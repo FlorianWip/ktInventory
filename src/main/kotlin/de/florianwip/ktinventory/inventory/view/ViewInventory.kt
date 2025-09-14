@@ -1,11 +1,12 @@
 package de.florianwip.ktinventory.inventory.view
 
 import de.florianwip.ktinventory.inventory.InventoryBase
-import de.florianwip.ktinventory.inventory.InventoryRegistry
 import de.florianwip.ktinventory.button.view.Button
-import de.florianwip.ktinventory.inventory.InventoryProperties
+import de.florianwip.ktinventory.inventory.list.ListInventory
+import de.florianwip.ktinventory.service.KtInventoryService
 import de.florianwip.ktinventory.util.InventoryHolder
 import de.florianwip.ktinventory.util.InventoryHolderFactory
+import de.florianwip.ktinventory.util.playSound
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
@@ -24,40 +25,37 @@ import org.bukkit.inventory.Inventory
  */
 open class ViewInventory(
     val rows: Int,
-    val name: Component,
-    val background: Array<Button<ViewInventory>?>?
+    val name: (player: Player) -> Component,
+    val background: Array<Button<ViewInventory>?>? = null
 ): InventoryBase<ViewInventory> {
 
     /**
-     * The properties for this inventory
-     * @see [InventoryProperties]
+     * The service bound to this [ListInventory]
      */
-    override var properties: InventoryProperties = InventoryRegistry.defaultProperties
+    protected var _service: KtInventoryService? = null
+
+    /**
+     * Whether the background was applied already
+     */
+    protected var backgroundApplied = false
+
+    override fun getService(): KtInventoryService? = _service
+
+    override fun register(service: KtInventoryService): ViewInventory {
+        if (this._service != null) {
+            throw IllegalStateException("Cannot bind service multiple times")
+        }
+        this._service = service
+        service.register(this)
+        return this
+    }
 
     private val holder = InventoryHolderFactory.getNewHolder()
 
-    constructor(rows: Int, name: String): this(rows, MiniMessage.miniMessage().deserialize(name), null)
-    constructor(rows: Int, name: Component): this(rows, name, null)
+    constructor(rows: Int, name: String): this(rows, { MiniMessage.miniMessage().deserialize(name) }, null)
+    constructor(rows: Int, name: Component): this(rows, { name }, null)
 
     private val buttons = mutableMapOf<Int, Button<ViewInventory>>()
-
-    init {
-        InventoryRegistry.bind(this)
-        var applyBackground: Array<Button<ViewInventory>?> = arrayOf()
-        if (background != null) {
-            applyBackground = background
-        } else if (InventoryRegistry.defaultBackground != null) {
-            applyBackground = InventoryRegistry.defaultBackground!!.getBackground(rows)
-        }
-        for (i in 0..(rows*9).minus(1)) {
-            if (i >= applyBackground.size) {
-                break
-            }
-            if (applyBackground[i] != null) {
-                setButton(i, applyBackground[i]!!)
-            }
-        }
-    }
 
     /**
      * Open the defined GUI for a [Player]
@@ -65,7 +63,7 @@ open class ViewInventory(
      * @param player the [Player]
      */
     override fun open(player: Player) {
-        val inventory = createInventory()
+        val inventory = createInventory(player)
         player.closeInventory()
         player.openInventory(inventory)
     }
@@ -79,8 +77,8 @@ open class ViewInventory(
         player.closeInventory()
     }
 
-    private fun createInventory(): Inventory {
-        val inventory = Bukkit.createInventory(holder, rows * 9, name)
+    private fun createInventory(player: Player): Inventory {
+        val inventory = Bukkit.createInventory(holder, rows * 9, name.invoke(player))
         buttons.forEach {
             inventory.setItem(it.key, it.value.item)
         }
@@ -162,10 +160,7 @@ open class ViewInventory(
         if (!isInventory(event.inventory)) {
             return
         }
-        if (properties.openSound != null) {
-            val player = event.player as Player
-            player.playSound(player.location, properties.openSound!!, 1f, 1f)
-        }
+        event.player.playSound(_service?.settings?.inventoryOpenSound ?: return)
     }
 
     /**
@@ -179,9 +174,28 @@ open class ViewInventory(
         if (!isInventory(event.inventory)) {
             return
         }
-        if (properties.closeSound != null) {
-            val player = event.player as Player
-            player.playSound(player.location, properties.closeSound!!, 1f, 1f)
+        event.player.playSound(_service?.settings?.inventoryCloseSound ?: return)
+    }
+
+    fun applyBackground() {
+        if (backgroundApplied) {
+            return
+        }
+        backgroundApplied = true
+        var applyBackground: Array<Button<ViewInventory>?> = arrayOf()
+        val globalBackground = _service?.settings?.viewInventoryBackground
+        if (background != null) {
+            applyBackground = background
+        } else if (globalBackground != null) {
+            applyBackground = globalBackground.getBackground(rows, _service)
+        }
+        for (i in 0..(rows*9).minus(1)) {
+            if (i >= applyBackground.size) {
+                break
+            }
+            if (applyBackground[i] != null && !buttons.containsKey(i)) {
+                setButton(i, applyBackground[i]!!)
+            }
         }
     }
 }

@@ -4,6 +4,7 @@ import de.florianwip.ktinventory.inventory.InventoryBase
 import de.florianwip.ktinventory.button.view.Button
 import de.florianwip.ktinventory.button.view.buildDummyButton
 import de.florianwip.ktinventory.item.buildItem
+import de.florianwip.ktinventory.service.KtInventoryService
 import org.bukkit.Material
 
 class DefaultBackground: InventoryBackground {
@@ -15,7 +16,7 @@ class DefaultBackground: InventoryBackground {
     private val template5Row = arrayOf(".#:::::#.", "#:::::::#", "#:-----:#", "#:::::::#", ".#:::::#.")
     private val template6Row = arrayOf(".#:::::#.", "#:::::::#", "#:-----:#", "#:-----:#", "#:::::::#", ".#:::::#.")
 
-    override fun <T: InventoryBase<T>> getBackground(rows: Int): Array<Button<T>?> {
+    override fun <T: InventoryBase<T>> getBackground(rows: Int, service: KtInventoryService?): Array<Button<T>?> {
         val templateArray = when (rows) {
             1 -> template1Row
             2 -> template2Row
@@ -26,19 +27,19 @@ class DefaultBackground: InventoryBackground {
             else -> throw IllegalArgumentException("rows must be between 1 and 6")
         }
         val template = templateArray.joinToString("")
-        val button = buildDummyButton<T>(buildItem {
+        val button = buildDummyButton<T>(buildItem(service) {
             type = Material.STONE_BUTTON
             name = "<red>"
         })
-        val whiteGlass = buildDummyButton<T>(buildItem {
+        val whiteGlass = buildDummyButton<T>(buildItem(service) {
             type = Material.WHITE_STAINED_GLASS_PANE
             name = "<red>"
         })
-        val grayGlass = buildDummyButton<T>(buildItem {
+        val grayGlass = buildDummyButton<T>(buildItem(service) {
             type = Material.GRAY_STAINED_GLASS_PANE
             name = "<red>"
         })
-        val blackGlass = buildDummyButton<T>(buildItem {
+        val blackGlass = buildDummyButton<T>(buildItem(service) {
             type = Material.BLACK_STAINED_GLASS_PANE
             name = "<red>"
         })

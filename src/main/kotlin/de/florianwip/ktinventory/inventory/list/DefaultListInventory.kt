@@ -5,7 +5,8 @@ import de.florianwip.ktinventory.button.view.Button
 import de.florianwip.ktinventory.button.view.buildButton
 import de.florianwip.ktinventory.button.view.buildDummyButton
 import de.florianwip.ktinventory.item.MHFSkull
-import de.florianwip.ktinventory.item.buildItem
+import de.florianwip.ktinventory.service.settings.KtInventorySettingsImpl
+import de.florianwip.ktinventory.util.playSound
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Material
@@ -13,19 +14,25 @@ import org.bukkit.Sound
 import org.bukkit.entity.Player
 import org.bukkit.event.inventory.ClickType
 
-class DefaultListInventory<T : Any>(
-    name: Component,
+open class DefaultListInventory<T : Any>(
+    name: (player: Player) -> Component,
     val entrySupplier: (player: Player) -> List<T>,
     val converter: (t: T) -> ListButton<T, DefaultListInventory<T>>,
-    val texts: InventoryTexts = InventoryTexts()
-): ListInventory<T, DefaultListInventory<T>>(name) {
+    rows: Int = 6,
+): ListInventory<T, DefaultListInventory<T>>(name, rows) {
 
     constructor(
         name: String,
         entrySupplier: (player: Player) -> List<T>,
         converter: (t: T) -> ListButton<T, DefaultListInventory<T>>,
-        texts: InventoryTexts = InventoryTexts()
-    ): this(MiniMessage.miniMessage().deserialize(name), entrySupplier, converter, texts)
+        rows: Int = 6,
+    ): this( { MiniMessage.miniMessage().deserialize(name) }, entrySupplier, converter, rows)
+
+    init {
+        if (rows == 1) {
+            throw IllegalArgumentException("The DefaultListInventory must have at least 2 rows to display entries and navigation")
+        }
+    }
 
     override val base: DefaultListInventory<T> = this
 
@@ -37,18 +44,18 @@ class DefaultListInventory<T : Any>(
         return converter(t)
     }
 
-    override val border: Array<Button<DefaultListInventory<T>>?> = buildBorder(6) {
+    override fun border(): Array<Button<DefaultListInventory<T>>?> = buildBorder(6) {
         val glass = buildDummyButton<DefaultListInventory<T>> (
-            buildItem {
+            _service!!.itemBuilder {
                 type = Material.BLACK_STAINED_GLASS_PANE
                 this.name = "<red>"
             }
         )
-        set(45, glass)
-        set(46, glass)
-        set(47, buildButton {
-            item = MHFSkull.ARROW_LEFT.buildSkull {
-                displayName = texts.prevPage
+        set(inventorySize - 9, glass)
+        set(inventorySize - 8, glass)
+        set(inventorySize - 7, buildButton {
+            item = MHFSkull.ARROW_LEFT.buildSkull(_service) {
+                name = _service?.settings?.listInventoryPrevPageText ?: KtInventorySettingsImpl.FALLBACK_SETTINGS.listInventoryPrevPageText
             }
             on(ClickType.LEFT) { event, base ->
                 val player = event.whoClicked as Player
@@ -56,17 +63,20 @@ class DefaultListInventory<T : Any>(
                 if (page < 1) {
                     player.playSound(player.location, Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 1f)
                 } else {
-                    player.playSound(player.location, Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f)
+                    val sound = _service?.settings?.listInventoryPageChangeSound
+                    if (sound != null) {
+                        player.playSound(sound)
+                    }
                     base.previousPage(player)
                 }
                 true
             }
         })
-        set(48, glass)
-        set(49, buildButton {
-            item = buildItem {
+        set(inventorySize - 6, glass)
+        set(inventorySize - 5, buildButton {
+            item = _service!!.itemBuilder {
                 type = Material.BARRIER
-                displayName = texts.close
+                name =  _service?.settings?.listInventoryCloseText ?: KtInventorySettingsImpl.FALLBACK_SETTINGS.listInventoryCloseText
             }
             on(ClickType.LEFT) { event, base ->
                 val player = event.whoClicked as Player
@@ -74,25 +84,28 @@ class DefaultListInventory<T : Any>(
                 true
             }
         })
-        set(50, glass)
-        set(51, buildButton {
+        set(inventorySize - 4, glass)
+        set(inventorySize - 3, buildButton {
             item = MHFSkull.ARROW_RIGHT.buildSkull {
-                displayName = texts.nextPage
+                name = _service?.settings?.listInventoryNextPageText ?: KtInventorySettingsImpl.FALLBACK_SETTINGS.listInventoryNextPageText
             }
             on(ClickType.LEFT) { event, base ->
                 val player = event.whoClicked as Player
                 val page = base.getCurrentPage(player)
                 if (page != base.cached[player.uniqueId]?.maxPage) {
                     base.nextPage(player)
-                    player.playSound(player.location, Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f)
+                    val sound = _service?.settings?.listInventoryPageChangeSound
+                    if (sound != null) {
+                        player.playSound(sound)
+                    }
                 } else {
                     player.playSound(player.location, Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 1f)
                 }
                 true
             }
         })
-        set(52, glass)
-        set(53, glass)
+        set(inventorySize - 2, glass)
+        set(inventorySize - 1, glass)
     }
 
 }

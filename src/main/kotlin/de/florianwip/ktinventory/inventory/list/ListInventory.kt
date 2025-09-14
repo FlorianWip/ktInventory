@@ -1,12 +1,12 @@
 package de.florianwip.ktinventory.inventory.list
 
 import de.florianwip.ktinventory.inventory.InventoryBase
-import de.florianwip.ktinventory.inventory.InventoryRegistry
 import de.florianwip.ktinventory.button.list.ListButton
 import de.florianwip.ktinventory.button.view.Button
-import de.florianwip.ktinventory.inventory.InventoryProperties
+import de.florianwip.ktinventory.service.KtInventoryService
 import de.florianwip.ktinventory.util.InventoryHolder
 import de.florianwip.ktinventory.util.InventoryHolderFactory
+import de.florianwip.ktinventory.util.playSound
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
@@ -16,18 +16,42 @@ import org.bukkit.event.inventory.InventoryOpenEvent
 import org.bukkit.inventory.Inventory
 import java.util.UUID
 
-const val LIST_INVENTORY_SIZE = 54
-
 /**
  * Build an inventory to list elements in it.
  *
  * @param T Type of the Element to list
  * @param I The Type of the Implementation
  * @property name title of the Inventory as [Component]
+ * @property rows amount of rows, max 6
  */
 abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
-    val name: Component,
+    val name: (player: Player) -> Component,
+    val rows: Int
 ) : InventoryBase<I> {
+
+    val inventorySize = rows * 9
+
+    init {
+        if (rows !in 1..6) {
+            throw IllegalArgumentException("Rows must be between 1 and 6")
+        }
+    }
+
+    /**
+     * The service bound to this [ListInventory]
+     */
+    protected var _service: KtInventoryService? = null
+
+    override fun register(service: KtInventoryService): I {
+        if (this._service != null) {
+            throw IllegalStateException("Cannot bind service multiple times")
+        }
+        this._service = service
+        service.register(this)
+        return base
+    }
+
+    override fun getService(): KtInventoryService? = _service
 
     /**
      * Get the List Elements for a specific player
@@ -48,8 +72,9 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
     /**
      * Get the border of the [de.florianwip.ktinventory.inventory.list.ListInventory]
      * @see [BorderBuilder]
+     * @return An [Array] of [Button] or null values in size of the inventory
      */
-    protected abstract val border: Array<Button<I>?>
+    protected abstract fun border(): Array<Button<I>?>
 
     /**
      * Returns the instance of the implemented [de.florianwip.ktinventory.inventory.list.ListInventory]
@@ -67,10 +92,6 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
     protected val holder = InventoryHolderFactory.getNewHolder()
 
     private var entriesPerPage = -1
-
-    init {
-        InventoryRegistry.bind(this)
-    }
 
     /**
      * Open the next page for a [Player]
@@ -112,7 +133,7 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
      * Get the current opened page of a [Player]
      *
      * @param player the [Player]
-     * @return the current opened page, if closed: -1
+     0202102* @return the current opened page, if closed: -1
      */
     fun getCurrentPage(player: Player): Int = cached[player.uniqueId]?.currentPage ?: -1
 
@@ -125,8 +146,9 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
      * @param page the page
      */
     fun openPage(player: Player, page: Int) {
+        val border = border()
         if (entriesPerPage == -1) {
-            entriesPerPage = LIST_INVENTORY_SIZE - border.filter { it != null }.size
+            entriesPerPage = inventorySize - border.filter { it != null }.size
         }
         if (!cached.containsKey(player.uniqueId)) {
             open(player)
@@ -134,7 +156,7 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
         }
         val cache = cached[player.uniqueId]!!
         if (cache.maxPage < page || page < 0) {
-            InventoryRegistry.plugin?.logger?.severe(
+            _service?.logger?.severe(
                 "Tried to open non existing page (playerName=${player.name}, playerUuid=${player.uniqueId} tried=$page, max=${cache.maxPage})"
             )
             close(player)
@@ -145,11 +167,11 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
             player.openInventory.topInventory
         } else {
             player.closeInventory()
-            Bukkit.createInventory(holder, LIST_INVENTORY_SIZE, name)
+            Bukkit.createInventory(holder, inventorySize, name.invoke(player))
         }
 
         var entry = 0
-        for (i in 0 until LIST_INVENTORY_SIZE) {
+        for (i in 0 until inventorySize) {
             if (border.size <= i) {
                 break
             }
@@ -178,17 +200,11 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
      * @return if it is a border slot
      */
     protected fun isBorder(slot: Int): Boolean {
-        if (border.size > slot) {
-            return border[slot] != null
+        if (border().size > slot) {
+            return border()[slot] != null
         }
         return false
     }
-
-    /**
-     * The properties for this inventory
-     * @see [InventoryProperties]
-     */
-    override var properties: InventoryProperties = InventoryRegistry.defaultProperties
 
     /**
      * Open the [ListInventory] for a specified [Player]
@@ -197,11 +213,9 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
      */
     override fun open(player: Player) {
         val items = entries(player)
-        cached[player.uniqueId] = ListInventoryCache(items)
+        cached[player.uniqueId] = ListInventoryCache(items, base = base)
         openPage(player, 0)
-        if (properties.openSound != null) {
-            player.playSound(player.location, properties.openSound!!, 1f, 1f)
-        }
+        player.playSound(_service?.settings?.inventoryOpenSound ?: return)
     }
 
     /**
@@ -212,9 +226,7 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
     override fun close(player: Player) {
         cached.remove(player.uniqueId)
         player.closeInventory()
-        if (properties.closeSound != null) {
-            player.playSound(player.location, properties.closeSound!!, 1f, 1f)
-        }
+        player.playSound(_service?.settings?.inventoryCloseSound ?: return)
     }
 
     /**
@@ -264,7 +276,7 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
             return
         }
         if (isBorder(slot)) {
-            val button = border[slot]
+            val button = border()[slot]
             val cancel = button?.clickActions[event.click]?.onClick(event, base) ?: true
             event.isCancelled = cancel
         } else {
@@ -309,9 +321,10 @@ class ListInventoryCache<T: Any, I : ListInventory<T, I>>(
     val items: List<T>,
     var buttons: MutableMap<Int, Pair<T, ListButton<T, I>>> = mutableMapOf(),
     var currentPage: Int = 1,
+    var base: I
 ) {
     /**
      * The max page
      */
-    val maxPage = items.size / LIST_INVENTORY_SIZE
+    val maxPage = items.size / base.inventorySize
 }
