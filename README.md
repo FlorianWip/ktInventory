@@ -1,7 +1,7 @@
 # ktInventory
 This library is a utility for things related the Inventory for PaperSpigot.<br>
 It is written in kotlin<br>
-**Note:** This library only works in PaperSpigot and is developed and tested for the 1.21.4
+**Note:** This library only works in PaperSpigot and is developed and tested for the 1.21.7
 
 ## Summary
 - designed for PaperSpigot 1.21.7
