@@ -78,6 +78,9 @@ open class ViewInventory(
     }
 
     private fun createInventory(player: Player): Inventory {
+        if (!backgroundApplied) {
+            applyBackground()
+        }
         val inventory = Bukkit.createInventory(holder, rows * 9, name.invoke(player))
         buttons.forEach {
             inventory.setItem(it.key, it.value.item)
