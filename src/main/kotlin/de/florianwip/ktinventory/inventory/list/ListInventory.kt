@@ -150,6 +150,11 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
         if (entriesPerPage == -1) {
             entriesPerPage = inventorySize - border.filter { it != null }.size
         }
+        if (entriesPerPage <= 0) {
+            _service?.logger?.severe("Cannot open ListInventory with no space for entries (playerName=${player.name}, playerUuid=${player.uniqueId})")
+            close(player)
+            return
+        }
         if (!cached.containsKey(player.uniqueId)) {
             open(player)
             return

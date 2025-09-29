@@ -28,12 +28,6 @@ open class DefaultListInventory<T : Any>(
         rows: Int = 6,
     ): this( { MiniMessage.miniMessage().deserialize(name) }, entrySupplier, converter, rows)
 
-    init {
-        if (rows == 1) {
-            throw IllegalArgumentException("The DefaultListInventory must have at least 2 rows to display entries and navigation")
-        }
-    }
-
     override val base: DefaultListInventory<T> = this
 
     override fun entries(player: Player): List<T> {
