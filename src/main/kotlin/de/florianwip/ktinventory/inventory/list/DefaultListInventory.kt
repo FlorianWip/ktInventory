@@ -44,7 +44,7 @@ open class DefaultListInventory<T : Any>(
         return converter(t)
     }
 
-    override fun border(): Array<Button<DefaultListInventory<T>>?> = buildBorder(6) {
+    override fun border(): Array<Button<DefaultListInventory<T>>?> = buildBorder(rows) {
         val glass = buildDummyButton<DefaultListInventory<T>> (
             _service!!.itemBuilder {
                 type = Material.BLACK_STAINED_GLASS_PANE
