@@ -19,7 +19,8 @@ import kotlin.math.log
 open class SuppliedInventory(
     val name: (Player) -> Component,
     val rows: Int = 3,
-    val background: Array<Button<SuppliedInventory>?>? = null,
+    var background: Array<Button<SuppliedInventory>?>? = null,
+    service: KtInventoryService? = null,
     val globalSupplier: (Player) -> Map<Int, Button<SuppliedInventory>> = { emptyMap() }
 ): InventoryBase<SuppliedInventory> {
 
@@ -31,12 +32,21 @@ open class SuppliedInventory(
 
     private val holder = InventoryHolderFactory.getNewHolder()
 
+    init {
+        if (service != null) {
+            register(service)
+        }
+    }
+
     override fun register(service: KtInventoryService): SuppliedInventory {
         if (_service != null) {
             throw IllegalStateException("SuppliedInventory is already registered")
         }
         _service = service
         service.register(this)
+        if (service.settings.viewInventoryBackground != null) {
+            background = service.settings.viewInventoryBackground!!.getBackground(rows, service)
+        }
         return this
     }
 
@@ -52,7 +62,10 @@ open class SuppliedInventory(
         val finalButtons = mutableMapOf<Int, Button<SuppliedInventory>>()
         if (background != null) {
             for (i in 0 until rows * 9) {
-                val button = background.getOrNull(i)
+                if (i >= background!!.size) {
+                    break
+                }
+                val button = background!![i]
                 if (button != null) {
                     finalButtons[i] = button
                 }
@@ -62,7 +75,7 @@ open class SuppliedInventory(
         finalButtons.putAll(globalSupplier.invoke(player))
         finalButtons.putAll(buttons)
         playerButtons[player.uniqueId] = finalButtons
-        val inventory = Bukkit.createInventory(holder, rows, name.invoke(player))
+        val inventory = Bukkit.createInventory(holder, rows * 9, name.invoke(player))
         player.closeInventory()
         player.openInventory(inventory)
         update(player)

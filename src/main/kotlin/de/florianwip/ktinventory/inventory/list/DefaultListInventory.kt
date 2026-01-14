@@ -5,6 +5,7 @@ import de.florianwip.ktinventory.button.view.Button
 import de.florianwip.ktinventory.button.view.buildButton
 import de.florianwip.ktinventory.button.view.buildDummyButton
 import de.florianwip.ktinventory.item.MHFSkull
+import de.florianwip.ktinventory.service.KtInventoryService
 import de.florianwip.ktinventory.service.settings.KtInventorySettingsImpl
 import de.florianwip.ktinventory.util.playSound
 import net.kyori.adventure.text.Component
@@ -18,6 +19,7 @@ open class DefaultListInventory<T : Any>(
     name: (player: Player) -> Component,
     val entrySupplier: (player: Player) -> List<T>,
     val converter: (t: T) -> ListButton<T, DefaultListInventory<T>>,
+    service: KtInventoryService? = null,
     rows: Int = 6,
 ): ListInventory<T, DefaultListInventory<T>>(name, rows) {
 
@@ -25,8 +27,15 @@ open class DefaultListInventory<T : Any>(
         name: String,
         entrySupplier: (player: Player) -> List<T>,
         converter: (t: T) -> ListButton<T, DefaultListInventory<T>>,
+        service: KtInventoryService? = null,
         rows: Int = 6,
-    ): this( { MiniMessage.miniMessage().deserialize(name) }, entrySupplier, converter, rows)
+    ): this( { MiniMessage.miniMessage().deserialize(name) }, entrySupplier, converter, service, rows)
+
+    init {
+        if (service != null) {
+            register(service)
+        }
+    }
 
     override val base: DefaultListInventory<T> = this
 

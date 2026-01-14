@@ -1,6 +1,9 @@
 package de.florianwip.ktinventory.button.list
 
 import de.florianwip.ktinventory.inventory.list.ListInventory
+import de.florianwip.ktinventory.item.ItemBuilder
+import de.florianwip.ktinventory.item.MHFSkull
+import de.florianwip.ktinventory.service.KtInventoryService
 import org.bukkit.event.inventory.ClickType
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.inventory.ItemStack
@@ -13,8 +16,8 @@ import org.bukkit.inventory.ItemStack
  * @param block The [ListButtonBuilder]
  * @return A new [ListButton]
  */
-fun <T: Any, I: ListInventory<T, I>> buildListButton(block: ListButtonBuilder<T, I>.() -> Unit): ListButton<T, I> {
-    return ListButtonBuilder<T, I>().apply(block).build()
+fun <T: Any, I: ListInventory<T, I>> buildListButton(service: KtInventoryService? = null, block: ListButtonBuilder<T, I>.() -> Unit): ListButton<T, I> {
+    return ListButtonBuilder<T, I>(service).apply(block).build()
 }
 
 /**
@@ -22,11 +25,12 @@ fun <T: Any, I: ListInventory<T, I>> buildListButton(block: ListButtonBuilder<T,
  *
  * @param T Type of the List Element
  * @param I Type of the [ListInventory]
- * @param item The [ItemStack] visible in the GUI
+ * @param itemStack The [ItemStack] visible in the GUI
  * @return A new [ListButton]
  */
-fun <T: Any, I: ListInventory<T, I>> buildDummyListButton(item: ItemStack): ListButton<T, I> = buildListButton {
-    this.item = item
+@Deprecated(replaceWith = ReplaceWith("buildListButton<T, I> { item = itemStack }"), message = "Use buildListButton instead")
+fun <T: Any, I: ListInventory<T, I>> buildDummyListButton(itemStack: ItemStack): ListButton<T, I> = buildListButton {
+    this.item = itemStack
 }
 
 /**
@@ -35,7 +39,9 @@ fun <T: Any, I: ListInventory<T, I>> buildDummyListButton(item: ItemStack): List
  * @param T Type of the List Element
  * @param I Type of the [ListInventory]
  */
-class ListButtonBuilder<T: Any, I: ListInventory<T, I>> {
+class ListButtonBuilder<T: Any, I: ListInventory<T, I>>(
+    val service: KtInventoryService? = null
+) {
 
     /**
      * The [ItemStack] visible in the GUI
@@ -65,6 +71,26 @@ class ListButtonBuilder<T: Any, I: ListInventory<T, I>> {
     fun build(): ListButton<T, I> {
         val display = requireNotNull(item) { "'item' must be set"}
         return ButtonImpl(display, clickActions)
+    }
+
+    /**
+     * Build an [ItemStack] with the correct service applied
+     *
+     * @param block the [ItemBuilder] block
+     * @return the built [ItemStack]
+     */
+    fun buildItem(block: ItemBuilder.() -> Unit): ItemStack {
+        return de.florianwip.ktinventory.item.buildItem(service, block)
+    }
+
+    /**
+     * Build a skull [ItemStack] with the correct service applied
+     *
+     * @param block the [ItemBuilder] block
+     * @return the built skull [ItemStack]
+     */
+    fun MHFSkull.buildSkull(block: ItemBuilder.() -> Unit): ItemStack {
+        return this.buildSkull(service, block)
     }
 }
 

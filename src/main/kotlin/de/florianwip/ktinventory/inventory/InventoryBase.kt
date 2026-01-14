@@ -1,12 +1,16 @@
 package de.florianwip.ktinventory.inventory
 
 import de.florianwip.ktinventory.button.view.Button
+import de.florianwip.ktinventory.item.ItemBuilder
+import de.florianwip.ktinventory.item.MHFSkull
+import de.florianwip.ktinventory.item.buildItem
 import de.florianwip.ktinventory.service.KtInventoryService
 import org.bukkit.entity.Player
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryCloseEvent
 import org.bukkit.event.inventory.InventoryOpenEvent
 import org.bukkit.inventory.Inventory
+import org.bukkit.inventory.ItemStack
 
 /**
  * A base interface to represent a basic GUI
@@ -85,4 +89,24 @@ interface InventoryBase<T: InventoryBase<T>> {
      * @param event the [InventoryCloseEvent]
      */
     fun handleClose(event: InventoryCloseEvent)
+
+    /**
+     * Build an [ItemStack] with the correct service applied
+     *
+     * @param block the [ItemBuilder] block
+     * @return the built [ItemStack]
+     */
+    fun buildItem(block: ItemBuilder.() -> Unit): ItemStack {
+        return buildItem(getService(), block)
+    }
+
+    /**
+     * Build a skull [ItemStack] with the correct service applied
+     *
+     * @param block the [ItemBuilder] block
+     * @return the built skull [ItemStack]
+     */
+    fun MHFSkull.buildSkull(block: ItemBuilder.() -> Unit): ItemStack {
+        return this.buildSkull(getService(), block)
+    }
 }

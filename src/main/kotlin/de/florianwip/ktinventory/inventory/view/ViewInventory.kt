@@ -26,8 +26,15 @@ import org.bukkit.inventory.Inventory
 open class ViewInventory(
     val rows: Int,
     val name: (player: Player) -> Component,
-    val background: Array<Button<ViewInventory>?>? = null
+    val background: Array<Button<ViewInventory>?>? = null,
+    service: KtInventoryService? = null
 ): InventoryBase<ViewInventory> {
+
+    init {
+        if (service != null) {
+            register(service)
+        }
+    }
 
     /**
      * The service bound to this [ListInventory]
