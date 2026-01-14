@@ -1,8 +1,10 @@
 package de.florianwip.ktinventory.inventory.list
 
-import de.florianwip.ktinventory.inventory.InventoryBase
 import de.florianwip.ktinventory.button.list.ListButton
+import de.florianwip.ktinventory.button.list.ListButtonBuilder
+import de.florianwip.ktinventory.button.list.buildListButton
 import de.florianwip.ktinventory.button.view.Button
+import de.florianwip.ktinventory.inventory.InventoryBase
 import de.florianwip.ktinventory.service.KtInventoryService
 import de.florianwip.ktinventory.util.InventoryHolder
 import de.florianwip.ktinventory.util.InventoryHolderFactory
@@ -14,7 +16,7 @@ import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryCloseEvent
 import org.bukkit.event.inventory.InventoryOpenEvent
 import org.bukkit.inventory.Inventory
-import java.util.UUID
+import java.util.*
 
 /**
  * Build an inventory to list elements in it.
@@ -311,6 +313,11 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
      */
     override fun handleClose(event: InventoryCloseEvent) {
     }
+
+    fun <T: Any, I: ListInventory<T, I>> buildListButton(block: ListButtonBuilder<T, I>.() -> Unit): ListButton<T, I> {
+        return buildListButton(getService(), block)
+    }
+
 }
 
 /**

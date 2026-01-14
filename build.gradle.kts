@@ -5,7 +5,7 @@ plugins {
 
 group = "de.florianwip"
 
-val tag = System.getenv("GITHUB_REF")?.split("/")?.last() ?: "2.0.0"
+val tag = System.getenv("GITHUB_REF")?.split("/")?.last() ?: "2.0.4-beta"
 version = if (tag.startsWith("v")) tag.substring(1) else tag
 
 repositories {
