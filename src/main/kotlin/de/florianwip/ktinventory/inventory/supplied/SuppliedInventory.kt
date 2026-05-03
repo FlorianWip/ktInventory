@@ -136,7 +136,7 @@ open class SuppliedInventory(
         if (button != null) {
             val action = button.clickActions[event.click]
             if (action != null) {
-                action.onClick(event, this)
+                event.isCancelled = action.onClick(event, this)
             } else {
                 event.isCancelled = true
             }
