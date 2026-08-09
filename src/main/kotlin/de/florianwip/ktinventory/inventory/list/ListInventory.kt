@@ -16,6 +16,7 @@ import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryCloseEvent
 import org.bukkit.event.inventory.InventoryOpenEvent
 import org.bukkit.inventory.Inventory
+import org.bukkit.plugin.Plugin
 import java.util.*
 
 /**
@@ -135,7 +136,7 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
      * Get the current opened page of a [Player]
      *
      * @param player the [Player]
-     0202102* @return the current opened page, if closed: -1
+    0202102* @return the current opened page, if closed: -1
      */
     fun getCurrentPage(player: Player): Int = cached[player.uniqueId]?.currentPage ?: -1
 
@@ -223,6 +224,33 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
         cached[player.uniqueId] = ListInventoryCache(items, base = base)
         openPage(player, 0)
         player.playSound(_service?.settings?.inventoryOpenSound ?: return)
+    }
+
+    /**
+     * Update the [ListInventory] for a specified [Player]
+     *
+     * @param player the [Player]
+     */
+    fun update(player: Player) {
+        if (!cached.containsKey(player.uniqueId)) {
+            return
+        }
+        val currentCache = cached[player.uniqueId]!!
+        val items = entries(player)
+        val cache = ListInventoryCache(items, base = base)
+        cached[player.uniqueId] = cache
+        val openPage = if (currentCache.currentPage > cache.maxPage) cache.maxPage else currentCache.currentPage
+        openPage(player, openPage)
+    }
+
+    /**
+     * Update the inventory in the next tick for a specified [Player]
+     *
+     * @param player the [Player]
+     * @param plugin the [Plugin] used for the scheduler
+     */
+    fun updateNextTick(player: Player, plugin: Plugin) {
+        Bukkit.getScheduler().runTaskLater(plugin, Runnable { update(player) }, 1L)
     }
 
     /**
@@ -314,7 +342,7 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
     override fun handleClose(event: InventoryCloseEvent) {
     }
 
-    fun <T: Any, I: ListInventory<T, I>> buildListButton(block: ListButtonBuilder<T, I>.() -> Unit): ListButton<T, I> {
+    fun <T : Any, I : ListInventory<T, I>> buildListButton(block: ListButtonBuilder<T, I>.() -> Unit): ListButton<T, I> {
         return buildListButton(getService(), block)
     }
 
@@ -329,7 +357,7 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
  * @property buttons The cached buttons
  * @property currentPage The current page
  */
-class ListInventoryCache<T: Any, I : ListInventory<T, I>>(
+class ListInventoryCache<T : Any, I : ListInventory<T, I>>(
     val items: List<T>,
     var buttons: MutableMap<Int, Pair<T, ListButton<T, I>>> = mutableMapOf(),
     var currentPage: Int = 1,

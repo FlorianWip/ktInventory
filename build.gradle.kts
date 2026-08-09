@@ -5,7 +5,7 @@ plugins {
 
 group = "de.florianwip"
 
-val tag = System.getenv("GITHUB_REF")?.split("/")?.last() ?: "2.0.4-beta"
+val tag = System.getenv("GITHUB_REF")?.split("/")?.last() ?: "2.0.6-beta"
 version = if (tag.startsWith("v")) tag.substring(1) else tag
 
 repositories {
@@ -28,19 +28,20 @@ publishing {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
             groupId = project.group.toString()
-            artifactId = "ktInventory" // change to your desired artifactId
+            artifactId = "ktInventory"
         }
     }
 
     repositories {
-        maven {
-            name = "flammenfuchs-public"
-            url = uri("https://repo.flammenfuchs.de/public")
-            credentials {
-                username = System.getenv("MAVEN_REPO_USERNAME")
-                password = System.getenv("MAVEN_REPO_PASSWORD")
-            }
-        }
+        mavenLocal()
+//        maven {
+//            name = "flammenfuchs-public"
+//            url = uri("https://repo.flammenfuchs.de/public")
+//            credentials {
+//                username = System.getenv("MAVEN_REPO_USERNAME")
+//                password = System.getenv("MAVEN_REPO_PASSWORD")
+//            }
+//        }
     }
 }
 
