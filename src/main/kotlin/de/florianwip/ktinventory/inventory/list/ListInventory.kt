@@ -17,6 +17,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent
 import org.bukkit.event.inventory.InventoryOpenEvent
 import org.bukkit.inventory.Inventory
 import java.util.*
+import kotlin.properties.Delegates
 
 /**
  * Build an inventory to list elements in it.
@@ -162,11 +163,13 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
             return
         }
         val cache = cached[player.uniqueId]!!
+        cache.entriesPerPage = entriesPerPage
         if (cache.maxPage < page || page < 0) {
             _service?.logger?.severe(
                 "Tried to open non existing page (playerName=${player.name}, playerUuid=${player.uniqueId} tried=$page, max=${cache.maxPage})"
             )
             close(player)
+            return
         }
         cache.currentPage = page
         cache.buttons.clear()
@@ -188,6 +191,7 @@ abstract class ListInventory<T : Any, I : ListInventory<T, I>>(
             } else {
                 val pos = page * entriesPerPage + entry
                 if (pos >= cache.items.size) {
+                    inventory.setItem(i, null)
                     continue
                 }
                 val listItem = cache.items[pos]
@@ -333,10 +337,16 @@ class ListInventoryCache<T: Any, I : ListInventory<T, I>>(
     val items: List<T>,
     var buttons: MutableMap<Int, Pair<T, ListButton<T, I>>> = mutableMapOf(),
     var currentPage: Int = 1,
-    var base: I
+    var base: I,
 ) {
+
+    var entriesPerPage = -1
+
     /**
      * The max page
      */
-    val maxPage = items.size / base.inventorySize
+    val maxPage: Int
+        get() {
+            return (items.size - 1).coerceAtLeast(0) / entriesPerPage
+        }
 }
